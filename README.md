@@ -1,6 +1,6 @@
 # 🛒 ProductsStore - API + Razor Frontend
 
-Este proyecto contiene una **API ASP.NET Core** y un **Frontend en Razor Pages** que simulan una tienda de artículos con autenticación basada en JWT, gestión de artículos y comentarios.
+Este proyecto contiene una **API ASP.NET Core** y un **Frontend en Razor Pages** una plataforma de publicación de artículos con autenticación basada en JWT, gestión de artículos y comentarios.
 
 ---
 
