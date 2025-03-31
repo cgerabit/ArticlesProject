@@ -1,0 +1,249 @@
+﻿@page
+@model ManageArticlesModel
+@{
+    ViewData["Title"] = "Gestión de artículos";
+}
+
+<div class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-primary fw-bold">Gestión de artículos</h3>
+        <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#newArticleModal">
+            Nuevo artículo
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>Autor</th>
+                    <th>Título</th>
+                    <th>Fecha de publicación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="articlesTableBody">
+                <tr><td colspan="4">Cargando artículos...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Nuevo Artículo -->
+<div class="modal fade" id="newArticleModal" tabindex="-1" aria-labelledby="newArticleLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="newArticleForm">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="newArticleLabel">Nuevo artículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Título</label>
+                        <input type="text" class="form-control" id="articleTitle" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" id="articleDescription" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Crear</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Editar Artículo -->
+<div class="modal fade" id="editArticleModal" tabindex="-1" aria-labelledby="editArticleLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="editArticleForm">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="editArticleLabel">Editar artículo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editArticleId" />
+                    <div class="mb-3">
+                        <label>Título</label>
+                        <input type="text" class="form-control" id="editArticleTitle" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Descripción</label>
+                        <textarea class="form-control" id="editArticleDescription" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning text-white">Guardar cambios</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let newModal, bootstrapNewModal;
+        let editModal, bootstrapEditModal;
+
+
+        $(document).ready(function () {
+            newModal = document.getElementById('newArticleModal');
+            bootstrapNewModal = bootstrap.Modal.getOrCreateInstance(newModal);
+
+            editModal = document.getElementById('editArticleModal');
+            bootstrapEditModal = bootstrap.Modal.getOrCreateInstance(editModal);
+
+            $.ajax({
+                url: "https://localhost:7149/api/auth/me",
+                method: "GET",
+                success: function (user) {
+                    currentUserId = user.userId;
+                    currentUserRoles = user.roles || [];
+                    loadArticles();
+                },
+                error: function () {
+                    alert("No se pudo verificar el usuario. Redirigiendo al login.");
+                    window.location.href = "/auth/login";
+                }
+            });
+
+            // Crear artículo
+            $("#newArticleForm").submit(function (e) {
+                e.preventDefault();
+
+                const article = {
+                    Name: $("#articleTitle").val(),
+                    Description: $("#articleDescription").val()
+                };
+
+                $.ajax({
+                    url: "https://localhost:7149/api/articles",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(article),
+                    success: function () {
+                        bootstrapNewModal.hide();
+                        alert("Artículo creado con éxito.");
+                        loadArticles();
+                        $("#newArticleForm")[0].reset();
+                    },
+                    error: function (xhr) {
+                        alert("Error: " + xhr.responseText);
+                    }
+                });
+            });
+
+            // Guardar edición
+            $("#editArticleForm").submit(function (e) {
+                e.preventDefault();
+
+                const articleId = $("#editArticleId").val();
+
+                const article = {
+                    Id: articleId,
+                    Name: $("#editArticleTitle").val(),
+                    Description: $("#editArticleDescription").val()
+                };
+
+                $.ajax({
+                    url: `https://localhost:7149/api/articles/${articleId}`,
+                    method: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify(article),
+                    success: function () {
+                        bootstrapEditModal.hide();
+                        alert("Artículo actualizado con éxito.");
+                        loadArticles();
+                    },
+                    error: function (xhr) {
+                        alert("Error al actualizar: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+
+        function loadArticles() {
+            $.ajax({
+                url: "https://localhost:7149/api/articles?page=1&pageSize=100",
+                method: "GET",
+                success: function (data) {
+                    const body = $("#articlesTableBody");
+                    body.empty();
+
+                    if (data.length === 0) {
+                        body.append("<tr><td colspan='4'>No hay artículos disponibles.</td></tr>");
+                    } else {
+                        data.forEach(article => {
+                            const date = new Date(article.publishDate).toLocaleString("es-VE", {
+                                day: "2-digit", month: "2-digit", year: "numeric",
+                                hour: "2-digit", minute: "2-digit"
+                            });
+
+                            const isAuthor = currentUserId === article.author?.id;
+                            const isAdmin = currentUserRoles.includes("Administrator");
+
+                            let actions = `<a href="/articles/ArticleDetails?id=${article.id}" class="btn btn-sm btn-outline-secondary">Ver detalle</a>`;
+
+                            if (isAuthor || isAdmin) {
+                                actions += `
+                                    <button class="btn btn-sm btn-warning text-white" onclick="openEditModal(${article.id})">Editar</button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteArticle(${article.id})">Eliminar</button>
+                                `;
+                            }
+
+                            body.append(`
+                                <tr>
+                                    <td>${article.author?.userName || "N/A"}</td>
+                                    <td>${article.name}</td>
+                                    <td>${date}</td>
+                                    <td>${actions}</td>
+                                </tr>
+                            `);
+                        });
+                    }
+                },
+                error: function () {
+                    $("#articlesTableBody").html("<tr><td colspan='4' class='text-danger'>Error al cargar artículos.</td></tr>");
+                }
+            });
+        }
+
+        function deleteArticle(id) {
+            if (!confirm("¿Seguro que deseas eliminar este artículo?")) return;
+
+            $.ajax({
+                url: `https://localhost:7149/api/articles/${id}`,
+                method: "DELETE",
+                success: function () {
+                    alert("Artículo eliminado.");
+                    loadArticles();
+                },
+                error: function () {
+                    alert("Error al eliminar el artículo.");
+                }
+            });
+        }
+
+        function openEditModal(id) {
+            $.ajax({
+                url: `https://localhost:7149/api/articles/${id}`,
+                method: "GET",
+                success: function (article) {
+                    $("#editArticleId").val(article.id);
+                    $("#editArticleTitle").val(article.name);
+                    $("#editArticleDescription").val(article.description);
+                    bootstrapEditModal.show();
+                },
+                error: function () {
+                    alert("Error al obtener datos del artículo.");
+                }
+            });
+        }
+    </script>
+}

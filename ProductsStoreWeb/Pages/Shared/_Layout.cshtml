@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ProductsStoreWeb</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/ProductsStoreWeb.styles.css" asp-append-version="true" />
+
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold text-primary" href="/">Mi App</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/articles/articles">Artículos</a>
+                        </li>
+                        <li class="nav-item d-none" id="manageArticlesLink">
+                            <a class="nav-link" href="/articles/manageArticles">Gestión</a>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item d-none" id="userEmailDisplay">
+                            <span class="nav-link fw-bold" id="userEmail"></span>
+                        </li>
+                        <li class="nav-item d-none" id="logoutLink">
+                            <a class="nav-link text-danger" href="#" onclick="logout()">Cerrar sesión</a>
+                        </li>
+                        <li class="nav-item" id="loginLink">
+                            <a class="nav-link" href="/auth/login">Iniciar sesión</a>
+                        </li>
+                        <li class="nav-item" id="registerLink">
+                            <a class="nav-link" href="/auth/register">Registrarse</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2025 - ProductsStoreWeb - <a asp-area="" asp-page="/Privacy">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="/js/site.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

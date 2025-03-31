@@ -1,0 +1,116 @@
+﻿@page
+@model ArticleDetailsModel
+@{
+    ViewData["Title"] = "Detalle del artículo";
+}
+
+<div class="container py-5">
+    <h2 class="fw-bold" id="articleTitle">Cargando...</h2>
+    <p class="text-muted" id="articleMeta"></p>
+    <p id="articleDescription"></p>
+
+    <button class="btn btn-outline-primary mb-3" id="toggleCommentsBtn">Mostrar comentarios</button>
+
+    <div id="commentsSection" style="display: none">
+        <h5 class="fw-bold">Comentarios (<span id="commentCount">0</span>)</h5>
+
+        <div id="commentFormContainer" class="mb-4" style="display: none;">
+            <form id="commentForm">
+                <textarea class="form-control mb-2" id="commentText" placeholder="Escribe un comentario..." required></textarea>
+                <button type="submit" class="btn btn-primary">Publicar</button>
+            </form>
+        </div>
+        <p class="text-muted" id="loginPrompt" style="display: none;">Debes iniciar sesión para comentar.</p>
+
+        <div id="commentList"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const articleId = new URLSearchParams(window.location.search).get("id");
+
+        $(document).ready(function () {
+            let commentsVisible = false;
+
+            const token = localStorage.getItem("token");
+            if (token) {
+                $("#commentFormContainer").show();
+            } else {
+                $("#loginPrompt").show();
+            }
+
+            loadArticle();
+
+            $("#toggleCommentsBtn").click(function () {
+                commentsVisible = !commentsVisible;
+                if (commentsVisible) {
+                    $("#commentsSection").slideDown();
+                    $(this).text("Ocultar comentarios");
+                } else {
+                    $("#commentsSection").slideUp();
+                    $(this).text("Mostrar comentarios");
+                }
+            });
+
+            $("#commentForm").submit(function (e) {
+                e.preventDefault();
+
+                const text = $("#commentText").val();
+
+                $.ajax({
+                    url: `https://localhost:7149/api/articles/${articleId}/comments`,
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ text }),
+                    beforeSend: function (xhr) {
+                        xhr.setRequestHeader("Authorization", "Bearer " + token);
+                    },
+                    success: function () {
+                        loadComments();
+                        $("#commentText").val("");
+                    },
+                    error: function () {
+                        alert("Error al publicar el comentario.");
+                    }
+                });
+            });
+
+            function loadArticle() {
+                $.get(`https://localhost:7149/api/articles/${articleId}`, function (article) {
+                    $("#articleTitle").text(article.name);
+                    $("#articleMeta").text(`${article.author?.userName} - ${new Date(article.publishDate).toLocaleString()}`);
+                    $("#articleDescription").text(article.description);
+
+                    loadCommentsFromArticle(article);
+                });
+            }
+
+            function loadComments() {
+                $.get(`https://localhost:7149/api/articles/${articleId}`, function (article) {
+                    loadCommentsFromArticle(article);
+                });
+            }
+
+            function loadCommentsFromArticle(article) {
+                const list = $("#commentList");
+                list.empty();
+
+                const comments = article.comments.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+
+                comments.forEach(comment => {
+                    list.append(`
+                        <div class="border-top pt-3 mt-3">
+                            <p class="mb-1">
+                                <small><strong>${comment.user.userName}</strong> el ${new Date(comment.publishedAt).toLocaleString()}</small>
+                            </p>
+                            <p>${comment.text}</p>
+                        </div>
+                    `);
+                });
+
+                $("#commentCount").text(comments.length);
+            }
+        });
+    </script>
+}
